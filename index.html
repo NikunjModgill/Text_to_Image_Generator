@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text-to-Image Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            background-size: 400% 400%;
+            animation: gradientBG 10s ease infinite;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .floating-object {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .object1 { top: 10%; left: 20%; animation-delay: 0s; }
+        .object2 { top: 50%; left: 70%; animation-delay: 1s; }
+        .object3 { top: 80%; left: 40%; animation-delay: 2s; }
+        .object4 { top: 30%; left: 80%; animation-delay: 3s; }
+        .object5 { top: 60%; left: 10%; animation-delay: 4s; }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: rotate 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="text-white flex flex-col items-center justify-center min-h-screen p-4">
+    <div class="floating-object object1"></div>
+    <div class="floating-object object2"></div>
+    <div class="floating-object object3"></div>
+    <div class="floating-object object4"></div>
+    <div class="floating-object object5"></div>
+    
+    <h1 class="text-3xl font-bold mb-4">AI Text-to-Image Generator</h1>
+    
+    <div class="w-full max-w-md bg-gray-800 p-6 rounded-lg shadow-lg">
+        <input id="prompt" type="text" class="w-full p-2 mb-4 text-black rounded" placeholder="Enter a prompt...">
+        <button onclick="generateImage()" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded">Generate</button>
+        
+        <div id="loading" class="hidden text-center mt-4">
+            <div class="loading-spinner"></div>
+            <p>Generating...</p>
+        </div>
+        <div id="image-container" class="mt-4 grid grid-cols-1 gap-4"></div>
+        <button id="download" class="hidden w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded mt-4" onclick="downloadImage()">Download</button>
+    </div>
+    <script>
+    async function generateImage() { 
+        const apiKey = prompt("Enter your Hugging Face API Key:"); // Secure way to avoid hardcoding
+        if (!apiKey) {
+            alert("⚠️ API Key is required! Please enter your key.");
+            return;
+        }
+
+        const promptText = document.getElementById('prompt').value.trim();
+        const imageContainer = document.getElementById('image-container');
+        const loading = document.getElementById('loading');
+        const downloadBtn = document.getElementById('download');
+
+        if (!promptText) {
+            alert('🚨 Please enter a prompt!');
+            return;
+        }
+
+        imageContainer.innerHTML = "";
+        loading.classList.remove('hidden');
+        downloadBtn.classList.add('hidden');
+
+        try {
+            const response = await fetch('https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ inputs: promptText })
+            });
+
+            if (response.status === 429) {
+                throw new Error("⚠️ Rate limit exceeded! Please wait and try again.");
+            } else if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`❌ Error: ${errorData.error || "Unknown error"}`);
+            }
+
+            const blob = await response.blob();
+            const imgUrl = URL.createObjectURL(blob);
+
+            const imgElement = document.createElement("img");
+            imgElement.src = imgUrl;
+            imgElement.classList.add("rounded-lg", "shadow-lg", "w-full");
+            imageContainer.appendChild(imgElement);
+
+            downloadBtn.classList.remove('hidden');
+            downloadBtn.onclick = function () {
+                const a = document.createElement('a');
+                a.href = imgUrl;
+                a.download = "generated-image.png";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+        } catch (error) {
+            imageContainer.innerHTML = `<p class="text-red-500">❌ ${error.message}</p>`;
+        } finally {
+            setTimeout(() => loading.classList.add('hidden'), 500);
+        } 
+    }
+</script>
+</body>
+</html>
