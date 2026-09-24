@@ -53,5 +53,5 @@ Contributions are welcome! Feel free to submit a Pull Request or open an Issue.
 This project is licensed under the **MIT License**.
 
 ---
-🚀Developed by Nikunj Modgill | GitHub: [@yourusername](https://github.com/NikunjModgill)
+🚀Developed by Nikunj Modgill | GitHub: [@Nikunj_Modgill](https://github.com/NikunjModgill)
 
